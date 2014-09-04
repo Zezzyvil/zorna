@@ -1,7 +1,9 @@
+import os
 from django.conf import settings
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 from django.utils.translation import ugettext_noop
+from django.core.urlresolvers import reverse
 
 from mptt.models import MPTTModel
 
@@ -11,6 +13,7 @@ from tagging.models import Tag
 
 from zorna.models import ZornaEntity
 from zorna.fileman.managers import ZornaFolderManager
+from zorna.utilit import get_upload_library
 
 FOLDER_NOTIFICATIONS = (
     (0, _(u'No email notification')),
@@ -73,3 +76,21 @@ class ZornaFile(ZornaEntity):
 
     def get_tag_list(self):
         return parse_tag_input(self.tags)
+
+    def get_file_info(self):
+        root_path = get_upload_library()
+        info = {}
+        fullpath = u"%s/%s" % (root_path, self.folder)
+        for dirName, subdirList, fileList in os.walk(fullpath):
+            for file_name in fileList:
+                tab = file_name.split(',')
+                if len(tab) > 1 and tab[0].isdigit():
+                    pk, filename = tab[0], ','.join(tab[1:])
+                    if int(pk) == self.pk:
+                        info['filename'] = filename
+                        url_component = dirName[len(
+                                root_path) + 1:].replace('\\', '/')
+                        info['url'] = reverse('get_file') + '?file=' + url_component + '/%s,%s' % (self.pk, filename)
+                        info['path'] = url_component
+                        return info
+        return info

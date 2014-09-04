@@ -1,0 +1,6 @@
+{% with info=object.get_file_info %}
+{{info.filename}}
+{% endwith %}
+{{ object.description }}
+{{ object.tags }}
+{{ object.owner.get_full_name }}

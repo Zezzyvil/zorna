@@ -21,6 +21,7 @@ from django.http import HttpResponse
 from django.forms.formsets import formset_factory
 from django.contrib.auth.decorators import login_required
 from django.template.loader import render_to_string
+from haystack.query import SearchQuerySet
 
 from zorna.acl.models import get_allowed_objects, get_acl_by_object
 
@@ -31,7 +32,8 @@ from zorna.communities.api import get_communities
 from zorna.utilit import get_upload_library, get_upload_user
 from zorna.fileman.models import ZornaFile, ZornaFolder
 from zorna.fileman.forms import ZornaFileForm, ZornaFileAddForm, ZornaFolderForm, ZornaFileUploadForm
-from zorna.fileman.api import recent_files, split_file_name, get_allowed_shared_folders, get_path_components, get_user_access_to_path
+from zorna.fileman.api import recent_files, split_file_name, get_allowed_folders, \
+        get_allowed_shared_folders, get_path_components, get_user_access_to_path,get_files_from_query
 
 
 def get_url_folder_content(path):
@@ -389,7 +391,18 @@ def get_home_page_files(request, search_tag, search_text):
     if not search_tag and not search_text:
         return recent_files(request, 'all', 10)
     else:
-        return recent_files(request, 'all', 10)
+        if search_tag and search_text:
+            query = search_tag + " OR " + search_text
+        else:
+            query = search_tag if search_tag else search_text
+        folders = get_allowed_folders(request)
+        results_files = SearchQuerySet().filter(
+            content=query).filter(folder__in=folders).models(ZornaFile)
+        files = []
+        for fic in results_files:
+            files.append(int(fic.pk))
+        files = ZornaFile.objects.filter(pk__in=files)
+        return get_files_from_query(request, files)
 
 
 def get_files(request, path, search_tag, search_text):
@@ -463,9 +476,12 @@ def get_folder_content(request):
     if path != ppath:
         path = ''
 
+    default_text = _(u'Recent files')
     bdelete = False
     if path == '':
         files = get_home_page_files(request, search_tag, search_text)
+        if search_tag or search_text:
+            default_text = _(u'Search results')
         bmanager = False
         folder_item_template = 'fileman/fm_folder_item_home.html'
     else:
@@ -486,7 +502,7 @@ def get_folder_content(request):
         bdelete = False
     else:
         brename = True
-    cdir_components = get_path_components(path)
+    cdir_components = get_path_components(path, default_text)
     extra_context = {'cdir_components': cdir_components,
                      'files': files,
                      'search_text': search_text,

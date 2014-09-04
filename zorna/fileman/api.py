@@ -63,9 +63,9 @@ def get_user_access_to_path(user, path):
     return False, False
 
 
-def get_path_components(path):
+def get_path_components(path, default=_(u'Recent files')):
     if not path:
-        return [{'rel': '', 'text': _(u'Recent files')}]
+        return [{'rel': '', 'text': default}]
 
     cdir_components = []
     dirs = path.split('/')
@@ -89,63 +89,67 @@ def get_path_components(path):
     return cdir_components
 
 
-def recent_files_folders(request, roots, limit):
+def get_files_from_query(request, query_result):
     results = {}
+    roots_folder = []
+    id_files = []
+    for f in query_result:
+        if f.folder not in roots_folder:
+            roots_folder.append(f.folder)
+        id_files.append(f.pk)
+    path = get_upload_library()
+    for p in roots_folder:
+        buser, bmanager = get_user_access_to_path(request.user, p)
+        ret = get_path_components(p)
+        human_path = '/'.join([c['text'] for c in ret])
+        for dirname, dirs, filenames in os.walk(os.path.join(path, p)):
+            for f in filenames:
+                pk, fname = split_file_name(f)
+                pk = int(pk)
+                if pk and pk in id_files:
+                    url_component = dirname[len(
+                        path) + 1:].replace('\\', '/')
+                    file_path = human_path + url_component[len(p):]
+                    statinfo = os.stat(os.path.join(dirname, f))
+                    fileinfo = {'name': fname,
+                                'realname': f,
+                                'size': statinfo[stat.ST_SIZE],
+                                'creation': datetime.fromtimestamp(statinfo[stat.ST_CTIME]),
+                                'modification': datetime.fromtimestamp(statinfo[stat.ST_MTIME]),
+                                'ext': os.path.splitext(f)[1][1:],
+                                'path': url_component,
+                                'manager': bmanager,
+                                }
+                    results[pk] = (
+                        fname, url_component, file_path, fileinfo)
+                    id_files.remove(pk)
+                    if not len(id_files):
+                        break
+            if not len(id_files):
+                break
+        if not len(id_files):
+            break
+    for f in query_result:
+        try:
+            f.file_name = results[f.pk][0]
+            f.file_url = reverse('get_file') + '?file=' + results[
+                f.pk][1] + '/%s,%s' % (f.pk, f.file_name)
+            f.file_path = results[f.pk][2]
+            f.file_info = results[f.pk][3]
+        except:
+            pass
+    return query_result
+
+
+def recent_files_folders(request, roots, limit):
     if roots:
         files = ZornaFile.objects.filter(
             folder__in=roots).order_by('-time_updated')[:int(limit)]
-        roots_folder = []
-        id_files = []
-        for f in files:
-            if f.folder not in roots_folder:
-                roots_folder.append(f.folder)
-            id_files.append(f.pk)
-        path = get_upload_library()
-        for p in roots_folder:
-            buser, bmanager = get_user_access_to_path(request.user, p)
-            ret = get_path_components(p)
-            human_path = '/'.join([c['text'] for c in ret])
-            for dirname, dirs, filenames in os.walk(os.path.join(path, p)):
-                for f in filenames:
-                    pk, fname = split_file_name(f)
-                    pk = int(pk)
-                    if pk and pk in id_files:
-                        url_component = dirname[len(
-                            path) + 1:].replace('\\', '/')
-                        file_path = human_path + url_component[len(p):]
-                        statinfo = os.stat(os.path.join(dirname, f))
-                        fileinfo = {'name': fname,
-                                    'realname': f,
-                                    'size': statinfo[stat.ST_SIZE],
-                                    'creation': datetime.fromtimestamp(statinfo[stat.ST_CTIME]),
-                                    'modification': datetime.fromtimestamp(statinfo[stat.ST_MTIME]),
-                                    'ext': os.path.splitext(f)[1][1:],
-                                    'path': url_component,
-                                    'manager': bmanager,
-                                    }
-                        results[pk] = (
-                            fname, url_component, file_path, fileinfo)
-                        id_files.remove(pk)
-                        if not len(id_files):
-                            break
-                if not len(id_files):
-                    break
-            if not len(id_files):
-                break
-        for f in files:
-            try:
-                f.file_name = results[f.pk][0]
-                f.file_url = reverse('get_file') + '?file=' + results[
-                    f.pk][1] + '/%s,%s' % (f.pk, f.file_name)
-                f.file_path = results[f.pk][2]
-                f.file_info = results[f.pk][3]
-            except:
-                pass
-        return files
+        return get_files_from_query(request, files)
     else:
         return []
 
-def recent_files(request, what, limit):
+def get_allowed_folders(request, what='all'):
 
     roots = []
     if what == 'all' or what == 'personal':
@@ -165,6 +169,11 @@ def recent_files(request, what, limit):
             request.user, Community, ['manage', 'member'])
         roots.extend(['C%s' % f for f in aof])
 
+    return roots
+
+
+def recent_files(request, what, limit):
+    roots = get_allowed_folders(request, what)
     return recent_files_folders(request, roots, limit)
 
 

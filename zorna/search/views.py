@@ -6,9 +6,12 @@ from django.http import Http404
 from django.conf import settings
 
 from haystack.query import SearchQuerySet
+
 from zorna.acl.models import get_allowed_objects
 from zorna.articles.models import ArticleCategory, ArticleStory
 from zorna.faq.models import FaqQuestion, Faq
+from zorna.fileman.models import ZornaFile
+from zorna.fileman.api import get_allowed_folders
 from zorna.search.form import SearchForm
 
 RESULTS_PER_PAGE = 15
@@ -23,6 +26,7 @@ def search(request):
         form = SearchForm(request.GET)
         if form.is_valid():
             query = form.cleaned_data['q']
+            query = "*"+query+"*" if query else query
             what = request.GET.get('what', None)
             if what == 'articles' or what is None:
                 ao = get_allowed_objects(
@@ -52,13 +56,25 @@ def search(request):
                         raise Http404("No such page of results!")
                     results['faqs'] = {
                         'results': results_faqs, 'page': page, 'paginator': paginator}
+            if what == 'files' or what is None:
+                folders = get_allowed_folders(request)
+                results_files = SearchQuerySet().filter(
+                    content=query).filter(folder__in=folders).models(ZornaFile)
+                if results_files:
+                    paginator = Paginator(results_files, RESULTS_PER_PAGE)
+                    try:
+                        page = paginator.page(int(request.GET.get('page', 1)))
+                    except InvalidPage:
+                        raise Http404("No such page of results!")
+                    results['files'] = {
+                        'results': results_files, 'page': page, 'paginator': paginator}
             if what == 'pages' or what is None:
                 from whoosh.index import open_dir
                 from whoosh.qparser import QueryParser
                 ix = open_dir(settings.HAYSTACK_WHOOSH_PATH, indexname="ZORNA_PAGES")
                 with ix.searcher() as searcher:
                     qp = QueryParser("content", schema=ix.schema)
-                    q = qp.parse("*"+query+"*")
+                    q = qp.parse(query)
                     pages = searcher.search(q)
                     if len(pages):
                         pages_result = []

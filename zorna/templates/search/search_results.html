@@ -13,6 +13,9 @@
         {% if k == "pages" %}
             <h3>{% trans "Pages" %}</h3>
         {% endif %}
+        {% if k == "files" %}
+            <h3>{% trans "Files" %}</h3>
+        {% endif %}
 		</div>
     {% for result in p.page.object_list %}
     	<div class="search_results">
@@ -22,7 +25,11 @@
                         {% if k == "pages" %}
                         <a href="{{result.url}}">{{ result.title }}</a>
                         {% else %}
+                        {% if k == "files" %}
+                        <a href="{{result.url}}">{{ result.filename }}</a>
+                        {% else %}
                         <a href="{{ result.object.get_absolute_url }}">{{ result.object }}</a>
+                        {% endif %}
                         {% endif %}
     				</h3>
     				<div class="object_header">
@@ -30,6 +37,10 @@
     					<span>{% trans "Article"%} | {{result.pub_date|date:"d M Y"}}</span>
 	    				| <strong>{% trans "By"%} {{result.author}}</strong>
 	    				{% endif %}
+                        {% if k == "files" %}
+                        <span>{% trans "File"%} | {{result.pub_date|date:"d M Y"}}</span>
+                        | <strong>{% trans "By"%} {{result.author}}</strong>
+                        {% endif %}
 	    				{% if k == "faqs" %}
     					<span>{% trans "Faq"%} | {{result.faq_name}} | {{result.category }}</span>
 	    				{% endif %}
@@ -41,6 +52,9 @@
     				{% if k == "articles" %}
     				{{result.object.body|striptags|truncatewords_html:50|safe}}
     				{% endif %}
+                    {% if k == "files" %}
+                    {{result.object.description|striptags|truncatewords_html:50|safe}}
+                    {% endif %}
                     {% if k == "pages" %}
                     {{result.highlights|safe}}
                     {% endif %}

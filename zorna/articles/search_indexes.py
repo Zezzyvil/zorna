@@ -1,17 +1,20 @@
 import datetime
-from haystack.indexes import *
+from haystack import indexes
 from haystack import site
 from zorna.articles.models import ArticleStory
 
 
-class ArticleStoryIndex(SearchIndex):
-    text = CharField(document=True, use_template=True)
-    author = CharField(model_attr='owner')
-    pub_date = DateTimeField(model_attr='time_created')
-    categories = MultiValueField()
+class ArticleStoryIndex(indexes.SearchIndex):
+    text = indexes.CharField(document=True, use_template=True)
+    author = indexes.CharField(model_attr='owner')
+    pub_date = indexes.DateTimeField(model_attr='time_created')
+    categories = indexes.MultiValueField()
 
     def get_model(self):
         return ArticleStory
+
+    def get_updated_field(self):
+        return 'time_updated'
 
     def index_queryset(self):
         """Used when the entire index for model is updated."""
