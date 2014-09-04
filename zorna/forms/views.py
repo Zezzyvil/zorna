@@ -20,6 +20,10 @@ from datetime import datetime
 from django.template.defaultfilters import slugify
 from django.core.files.storage import FileSystemStorage
 from django.contrib.auth.decorators import login_required
+try:
+    from PIL import Image
+except ImportError:
+    import Image
 
 from zorna.forms import fields
 from zorna.acl.models import get_acl_for_model
@@ -1402,19 +1406,21 @@ def file_view(request, file, size=None):
 
     fs = FileSystemStorage(location=get_upload_forms_attachments())
     path = join(fs.location, field_entry.value)
-    try:
-        from PIL import Image
-    except ImportError:
-        import Image
-    try:
-        Image.open(path).verify()
-        if size:
-            miniature = resize_image(path, size)
-            split = path.rsplit('/', 1)
-            path = '%s/%s' % (split[0], miniature)
-    except:
-        pass
-
+    filehead, filetail = os.path.split(path)
+    basename, extension = os.path.splitext(filetail)
+    miniature = basename + '_' + size + extension
+    miniature = os.path.join(filehead, miniature)
+    if not os.path.exists(miniature):
+        try:
+            Image.open(path).verify()
+            if size:
+                miniature = resize_image(path, size)
+                split = path.rsplit('/', 1)
+                path = '%s/%s' % (split[0], miniature)
+        except:
+            pass
+    else:
+        path = miniature
     response = HttpResponse(mimetype=guess_type(path)[0])
     f = open(path, "r+b")
     response["Content-Disposition"] = "attachment; filename=\"%s\"" % smart_str(path.rsplit('/', 1)[1])
@@ -1448,7 +1454,7 @@ def get_entries(entries, parent=None):
     return ret
 
 
-def form_browse_entries_view(request, slug):
+def form_browse_entries_view(request, slug, template=None):
     try:
         form = FormsForm.objects.select_related(depth=1).get(slug=slug)
         check = get_acl_for_model(form)
@@ -1461,13 +1467,18 @@ def form_browse_entries_view(request, slug):
     ec['zorna_title_page'] = form.name
     if not ec:
         return HttpResponseForbidden()
-    try:
-        t = loader.get_template('forms_list_entries_%s.html' % slug)
-    except TemplateDoesNotExist:
-        t = loader.get_template("forms/browse_entries.html")
+    if template:
+        t = loader.get_template(template)
+    else:
+        try:
+            t = loader.get_template('forms_list_entries_%s.html' % slug)
+        except TemplateDoesNotExist:
+            t = loader.get_template("forms/browse_entries.html")
     c = RequestContext(request, ec)
     return HttpResponse(t.render(c))
 
+def form_browse_entries_raw_view(request, slug):
+    return form_browse_entries_view(request, slug, "forms/browse_entries.html")
 
 def forms_form_view_entry(request, entry):
 

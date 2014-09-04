@@ -388,6 +388,7 @@ class FormsFieldEntryManager(models.Manager):
         form_fields = form.fields.all()
         filterFields = None
         form.fields_reference = {}
+        filterFieldsEntries = None
         for f in form_fields:
             if kwargs.has_key(f.slug):
                 value = kwargs[f.slug]
@@ -400,11 +401,17 @@ class FormsFieldEntryManager(models.Manager):
                     if value and value == e[1]:
                         value = e[0]
             if kwargs.has_key(f.slug):
-                if filterFields is None:
-                    filterFields = Q(value=value, field__slug=f.slug)
+                if filterFieldsEntries:
+                    filterFieldsEntries = FormsFieldEntry.objects.filter(form_entry__form=form, value=value, field__slug=f.slug,
+                        form_entry__pk__in = [f.form_entry_id for f in filterFieldsEntries])
                 else:
-                    filterFields = filterFields | Q(
-                        value=value, field__slug=f.slug)
+                    filterFieldsEntries = FormsFieldEntry.objects.filter(form_entry__form=form, value=value, field__slug=f.slug)
+        try:
+            if not filterFieldsEntries.exists():
+                return [],[]
+        except:
+            pass
+
 
         entries = kwargs.get('entries', None)
         f = kwargs.get('f', None)
@@ -434,16 +441,14 @@ class FormsFieldEntryManager(models.Manager):
                         Q(form_entry__account__first_name__icontains=q) | \
                         Q(value__icontains=q)
 
-        if filter or filterFields:
-            if filter and filterFields:
-                field_entries = FormsFieldEntry.objects.filter(Q(
-                    form_entry__form=form) & filter & (filterFields))
-            elif filter:
-                field_entries = FormsFieldEntry.objects.filter(Q(
-                    form_entry__form=form) & filter)
+        if filter or filterFieldsEntries:
+            if filter and filterFieldsEntries:
+                field_entries = FormsFieldEntry.objects.filter(Q(form_entry__form=form) & filter, pk__in = [f.pk for f in filterFieldsEntries])
+            elif filterFieldsEntries:
+                field_entries = FormsFieldEntry.objects.filter(Q(form_entry__form=form), pk__in = [f.pk for f in filterFieldsEntries])
             else:
                 field_entries = FormsFieldEntry.objects.filter(Q(
-                    form_entry__form=form) & filterFields)
+                    form_entry__form=form) & filter)
             filter = Q(form_entry__in=[f.form_entry_id for f in field_entries])
         else:
             filter = Q(form_entry__form=form)
@@ -792,7 +797,7 @@ def forms_format_entries(form, query_set, hidden=[]):
         for c in columns['fields']:
             if c['type'] in [fields.DECIMAL, fields.INTEGER]:
                 try:
-                    if c['type'] == fields.INTEGER:
+                    if c['type'] == fields.INTEGER and rows[row][c['slug']]['value']:
                         c['total'] = c['total'] + int(
                             rows[row][c['slug']]['value'])
                     else:
