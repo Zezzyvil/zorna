@@ -1406,21 +1406,22 @@ def file_view(request, file, size=None):
 
     fs = FileSystemStorage(location=get_upload_forms_attachments())
     path = join(fs.location, field_entry.value)
-    filehead, filetail = os.path.split(path)
-    basename, extension = os.path.splitext(filetail)
-    miniature = basename + '_' + size + extension
-    miniature = os.path.join(filehead, miniature)
-    if not os.path.exists(miniature):
-        try:
-            Image.open(path).verify()
-            if size:
-                miniature = resize_image(path, size)
-                split = path.rsplit('/', 1)
-                path = '%s/%s' % (split[0], miniature)
-        except:
-            pass
-    else:
-        path = miniature
+    if size:
+        filehead, filetail = os.path.split(path)
+        basename, extension = os.path.splitext(filetail)
+        miniature = basename + '_' + size + extension
+        miniature = os.path.join(filehead, miniature)
+        if not os.path.exists(miniature):
+            try:
+                Image.open(path).verify()
+                if size:
+                    miniature = resize_image(path, size)
+                    split = path.rsplit('/', 1)
+                    path = '%s/%s' % (split[0], miniature)
+            except:
+                pass
+        else:
+            path = miniature
     response = HttpResponse(mimetype=guess_type(path)[0])
     f = open(path, "r+b")
     response["Content-Disposition"] = "attachment; filename=\"%s\"" % smart_str(path.rsplit('/', 1)[1])
