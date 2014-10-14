@@ -5,7 +5,6 @@
   <li><a href="{% url manager_edit_faq curfaq.pk %}" title="{% trans "Click to manage faq" %}">{% trans "Manage faq" %}</a></li>
   <li><a href="{% url manager_faq_list_categories curfaq.pk %}" title="{% trans "Click to list faq category" %}">{% trans "Categories" %}</a></li>
   <li><a href="{% url manager_faq_add_category curfaq.pk %}" title="{% trans "Click to add faq category" %}">{% trans "Add category" %}</a></li>
-  <li><a href="{% url manager_faq_list_questions curfaq.pk %}" title="{% trans "Click to list questions" %}">{% trans "Questions" %}</a></li>
   <li><a href="{% url manager_faq_add_question curfaq.pk %}" title="{% trans "Click to add question" %}">{% trans "Add question" %}</a></li>
 </ul>
 {% endif %}
