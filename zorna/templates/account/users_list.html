@@ -4,20 +4,26 @@
 {% block zorna_left_content %}
 <div class="bloc">
   <h1>{% trans "Users  list" %}</h1>
-  <form method="post" action=".">{% csrf_token %} 
+  <form method="post" action=".">{% csrf_token %}
   <input type="text" id="search" name="q" value="{{ search_value }}" size="40" />
+  <input type="hidden" name="o" value="{{orderby}}" />
+  <input type="hidden" name="ot" value="{{order}}" />
   <input type="submit" value="{% trans "Search" %}" />
 <table>
 	<thead>
 		<tr>
 		<th width="1%">&nbsp;</th>
 		<th width="1%">&nbsp;</th>
-		<th>{% trans "Firstname" %}</th>
-		<th>{% trans "Lastname" %}</th>
+		<th {% if orderby == "first_name" %}class="sorted {% if order == "desc"%}descending{%else%}ascending{%endif%}"{% endif %}>
+			<a href="?o=first_name&ot={{order}}&q={{search_value}}">{% trans "Firstname" %}</a>
+		</th>
+		<th {% if orderby == "last_name" %}class="sorted {% if order == "desc"%}descending{%else%}ascending{%endif%}"{% endif %}>
+			<a href="?o=last_name&ot={{order}}&q={{search_value}}">{% trans "Lastname" %}</a>
+		</th>
 		<th></th>
 		</tr>
 	</thead>
-	
+
 	<tbody>
 		{% for user in object_list %}
 		<tr>
@@ -52,7 +58,7 @@
 		{% endfor %}
         <span class="current">
             {{ page_obj.paginator.count }} Users
-        </span>	
+        </span>
 </p>
 {% endif %}
 

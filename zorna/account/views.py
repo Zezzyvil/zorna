@@ -271,12 +271,21 @@ def list_users(request):
         request.user, 'zorna_validate_registration')
     if request.user.is_superuser or baccess:
         q = request.REQUEST.get('q', '')
-        extra_context = {'search_value': q}
         if q != '':
             user_lists = User.objects.filter(Q(first_name__icontains=q) | Q(
-                last_name__icontains=q)).order_by('first_name', 'last_name')
+                last_name__icontains=q))
         else:
-            user_lists = User.objects.all().order_by('first_name', 'last_name')
+            user_lists = User.objects.all()
+        orderby = request.REQUEST.get('o', 'first_name')
+        order = request.REQUEST.get('ot', 'asc')
+        if order == 'desc':
+            user_lists = user_lists.order_by("-%s" % orderby)
+        else:
+            user_lists = user_lists.order_by("%s" % orderby)
+        extra_context = {'search_value': q,
+                         'orderby': orderby,
+                         'order': 'asc' if order == 'desc' else 'desc',
+                         }
         return object_list(request, queryset=user_lists, extra_context=extra_context, template_name='account/users_list.html', paginate_by=50)
     else:
         return HttpResponseRedirect('/')
@@ -578,7 +587,8 @@ def form_process_import_users(request):
                 email = smart_unicode(row[fields['email']].strip(), encoding)
                 password = row[fields['password']].strip()
                 if username and first_name and last_name and email and password:
-                    if username in registered_users:  # user already exist, update record
+                    # user already exist, update record
+                    if username in registered_users:
                         user = registered_users[username]
                         user.first_name = first_name
                         user.last_name = last_name
