@@ -325,7 +325,7 @@ def add_new_story(request):
                     except:
                         pass
 
-            tags = map(int, request.POST.getlist('article_tags[]', []))
+            tags = map(int, request.POST.getlist('article_tags[]'))
             tags = ArticleTags.objects.filter(pk__in=tags)
             story.tags.add(*tags)
 
@@ -340,7 +340,7 @@ def add_new_story(request):
 
     tags = ArticleTags.objects.all()
     context = RequestContext(request)
-    extra_context = {'form_story': form_story, 
+    extra_context = {'form_story': form_story,
                     'form_attachments': form_attachments_set,
                     'tags': tags,
                     }
@@ -429,7 +429,7 @@ def edit_story(request, story):
         else:
             form_attachments_set = None
 
-        tags = map(int, request.POST.getlist('article_tags[]', []))
+        tags = map(int, request.POST.getlist('article_tags[]'))
         story.tags.clear()
         tags = ArticleTags.objects.filter(pk__in=tags)
         story.tags.add(*tags)
