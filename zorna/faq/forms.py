@@ -55,8 +55,6 @@ class FaqQuestionCategoryForm(ModelForm):
 class FaqQuestionForm(ModelForm):
     question = forms.CharField(label=_(u'Question'), widget=forms.Textarea(
         attrs={'rows': '5', 'cols': '80'}))
-    answer = forms.CharField(label=_(u'Answer'), widget=forms.Textarea(
-        attrs={'rows': '5', 'cols': '80'}))
 
     class Meta:
         model = FaqQuestion
@@ -65,4 +63,4 @@ class FaqQuestionForm(ModelForm):
     def __init__(self, request, faq, *args, **kwargs):
         super(FaqQuestionForm, self).__init__(*args, **kwargs)
         self.fields['category'].queryset = FaqCategory.objects.filter(faq=faq)
-        self.fields['body'] = forms.CharField(label=_(u'body'), widget=CKEditorWidget(config_name=SiteOptions.objects.get_ckeditor_config(request)))
+        self.fields['answer'] = forms.CharField(label=_(u'answer'), widget=CKEditorWidget(config_name=SiteOptions.objects.get_ckeditor_config(request)))
