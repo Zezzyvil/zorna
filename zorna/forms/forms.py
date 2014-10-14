@@ -180,9 +180,9 @@ class FormsFormPanelForm(ModelForm):
         request = kwargs.pop('request')
         ckeditor_config_name = SiteOptions.objects.get_ckeditor_config(request)
         super(FormsFormPanelForm, self).__init__(*args, **kwargs)
-        self.fields['panel_header'] = forms.CharField(label=_(u'body'), 
+        self.fields['panel_header'] = forms.CharField(label=_(u'body'), required=False,
             widget=CKEditorWidget(config_name=ckeditor_config_name))
-        self.fields['panel_footer'] = forms.CharField(label=_(u'body'), 
+        self.fields['panel_footer'] = forms.CharField(label=_(u'body'), required=False,
             widget=CKEditorWidget(config_name=ckeditor_config_name))
 
 
