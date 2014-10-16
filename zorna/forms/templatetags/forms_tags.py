@@ -23,11 +23,13 @@ class check_form_permission_node(template.Node):
     def render(self, context):
         request = context['request']
         try:
-            slug = self.form.resolve(context)
+            form = FormsForm.objects.get(slug=self.form.resolve(context))
         except:
-            slug = self.form
+            if self.form.isdigit():
+                form = FormsForm.objects.get(pk=self.form)
+            else:
+                form = FormsForm.objects.get(slug=self.form)
         try:
-            form = FormsForm.objects.get(slug=slug)
             check = get_acl_for_model(form)
             func = getattr(check, '%s_formsform' % self.permission, None)
             if func is None:

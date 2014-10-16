@@ -1454,6 +1454,10 @@ def get_entries(entries, parent=None):
                     break
     return ret
 
+def form_browse_entries_view_by_id(request, form_id):
+    form = FormsForm.objects.get(pk= form_id)
+    return form_browse_entries_view(request, form.slug)
+
 
 def form_browse_entries_view(request, slug, template=None):
     try:
