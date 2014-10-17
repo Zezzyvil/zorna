@@ -118,7 +118,7 @@ class FormsFormActionMessageForm(ModelForm):
     def __init__(self, *args, **kwargs):
         request = kwargs.pop('request')
         super(FormsFormActionMessageForm, self).__init__(*args, **kwargs)
-        self.fields['message'] = forms.CharField(label=_(u'body'), 
+        self.fields['message'] = forms.CharField(label=_(u'body'),
             widget=CKEditorWidget(config_name=SiteOptions.objects.get_ckeditor_config(request)))
 
 
@@ -656,6 +656,11 @@ class FormForForm(forms.ModelForm):
                     entry.fields.create(field_id=field.id, value=value)
             elif value is not None:
                 entry.fields.create(field_id=field.id, value=value)
+
+        #if there is no field delete entry
+        if not entry.fields.all():
+            entry.delete()
+            return None
 
         cols, row = FormsFieldEntry.objects.forms_get_entry(entry)
         form_entry_post_save.send(sender=entry, cols=cols, row=row)

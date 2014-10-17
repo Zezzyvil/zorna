@@ -13,22 +13,27 @@ register = template.Library()
 class check_form_permission_node(template.Node):
 
     def __init__(self, form, permission, var_name):
-        if not (form[0] == form[-1] and form[0] in ('"', "'")):
-            self.form = template.Variable(form)
-        else:
-            self.form = form[1:-1]
+        self.form = template.Variable(form)
         self.var_name = var_name
         self.permission = permission
 
     def render(self, context):
         request = context['request']
         try:
-            form = FormsForm.objects.get(slug=self.form.resolve(context))
-        except:
-            if self.form.isdigit():
-                form = FormsForm.objects.get(pk=self.form)
+            slug = self.form.resolve(context)
+        except template.VariableDoesNotExist:
+            if self.form[0] == self.form[-1] and self.form[0] in ('"', "'"):
+                slug = self.form[1:-1]
             else:
-                form = FormsForm.objects.get(slug=self.form)
+                slug = self.form
+        try:
+            if slug.isdigit():
+                form = FormsForm.objects.get(pk=slug)
+            else:
+                form = FormsForm.objects.get(slug=slug)
+        except Exception, e:
+            return ''
+
         try:
             check = get_acl_for_model(form)
             func = getattr(check, '%s_formsform' % self.permission, None)
