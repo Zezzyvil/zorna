@@ -8,7 +8,7 @@
 
 {% block iframe_content %}
 {% include "forms/form_menu.html"%}
-<div class="bloc">			
+<div class="bloc">
 <table id="field-table-dnd">
   <thead>
     <tr>
@@ -21,7 +21,13 @@
         {% for row in export_form.get_entries %}
         <tr class="{% cycle on,off %}">
             {% for field in row %}
-            <td>{{ field.value }}</td>
+            <td>
+              {% if field.type == 'checkbox_multiple' or field.type == 'select_multiple' or field.type == 'radio_multiple' %}
+                    {{ field.value|join:" , " }}
+              {% else %}
+                  {{ field.value }}
+              {% endif %}
+            </td>
             {% endfor %}
         </tr>
         {% endfor %}

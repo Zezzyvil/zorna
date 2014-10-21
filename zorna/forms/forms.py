@@ -729,16 +729,16 @@ class FormsExportForm(forms.Form):
             label=_("Row ID"), initial=True, required=False)
 
     def get_entries(self):
-        q = FormsFieldEntry.objects.select_related(depth=1).filter(Q(
-            form_entry__form=self.form)).order_by("-form_entry__time_created")
+        entries_queryset = FormsFormEntry.objects.filter(Q(
+            form=self.form)).order_by("time_created")
         if self.cleaned_data["start_date"] and self.cleaned_data["end_date"]:
             time_from = self.cleaned_data["start_date"]
             time_to = self.cleaned_data["end_date"]
             if time_from and time_to:
-                q = q.filter(
-                    form_entry__time_created__range=(time_from, time_to))
-        columns, rows = forms_format_entries(self.form, q)
-        cols = self.get_columns()
+                entries_queryset = entries_queryset.filter(
+                    time_created__range=(time_from, time_to))
+        columns, rows = FormsFieldEntry.objects.forms_get_entries(self.form, entries=entries_queryset)
+
         entries = []
         for r in rows:
             row = []

@@ -1375,7 +1375,13 @@ def forms_form_export_entries(request, form):
                 csv = writer(response, delimiter=';')
                 csv.writerow(export_form.get_columns())
                 for row in export_form.get_entries():
-                    csv.writerow([smart_str(r['value']) for r in row])
+                    result = []
+                    for r in row:
+                        if r['type'] in ['checkbox_multiple', 'select_multiple', 'radio_multiple']:
+                            result.append(smart_str(','.join(r['value'])))
+                        else:
+                            result.append(smart_str(r['value']))
+                    csv.writerow(result)
                 return response
             else:
                 template = "forms/view_entries.html"
