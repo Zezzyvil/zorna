@@ -85,6 +85,16 @@ def get_upload_plugins():
 
 
 def resize_image(path, size=None):
+    """
+    This method resize an image
+    based on the parameter ``path``
+
+    :param path: The image's path to resize
+    :param size: The size as a tuple (W, H)
+
+    :return: The thumbnail
+
+    """
     def scale(max_x, pair):
         x, y = pair
         new_y = (float(max_x) / x) * y
@@ -103,17 +113,32 @@ def resize_image(path, size=None):
         mode = 'both'
 
     # defining the filename and the miniature filename
+
+    # FIXME: Bug seen at: http://demo.zornaproject.com/account/user/settings/
+    # FIXME: using "demo" as login/password
+    # FIXME: the filename may not exist in some cases
+    # FIXME: no check at all is done the filename !
+    # FIXME: If the filename does not exists,
+    # FIXME: a default thumbnail should be taken as default,
+    # FIXME: or something else...
+    filename = (path
+                if path and os.path.exists(path)
+                else os.path.join(settings.MEDIA_ROOT,
+                                  'images', 'icon_no_photo.png'))
+
     filehead, filetail = os.path.split(path)
     basename, format = os.path.splitext(filetail)
     miniature = basename + '_' + csize + format
-    filename = path
     miniature_filename = os.path.join(filehead, miniature)
     filehead, filetail = os.path.split(filetail)
     miniature_url = filehead + '/' + miniature
-    if os.path.exists(miniature_filename) and os.path.getmtime(filename) > os.path.getmtime(miniature_filename):
+    if (os.path.exists(miniature_filename) and
+            os.path.getmtime(filename) > os.path.getmtime(miniature_filename)):
         os.unlink(miniature_filename)
     # if the image wasn't already resized, resize it
     if not os.path.exists(miniature_filename):
+        # FIXME: Or a path existence condition,
+        # FIXME: Or a try/except (IOError) statement ?
         image = Image.open(filename)
         image_x, image_y = image.size
 
