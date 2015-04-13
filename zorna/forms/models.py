@@ -807,14 +807,16 @@ def forms_format_entries(form, query_set, hidden=[]):
                     pass
             elif c['type'] == fields.DATE_TIME:
                 try:
+                    rows[row][c['slug']]['raw_value'] = datetime.datetime(*time.strptime(rows[row][c['slug']]['value'], "%Y-%m-%d %H:%M:%S")[0:5])
                     rows[row][c['slug']]['value'] = formats.date_format(
-                        datetime.datetime(*time.strptime(rows[row][c['slug']]['value'], "%Y-%m-%d %H:%M:%S")[0:5]), "SHORT_DATETIME_FORMAT")
+                        rows[row][c['slug']]['raw_value'], "SHORT_DATETIME_FORMAT")
                 except Exception, e:
                     rows[row][c['slug']]['value'] = ''
             elif c['type'] == fields.DATE:
                 try:
+                    rows[row][c['slug']]['raw_value'] = datetime.datetime(*time.strptime(rows[row][c['slug']]['value'], "%Y-%m-%d")[0:5])
                     rows[row][c['slug']]['value'] = formats.date_format(
-                        datetime.datetime(*time.strptime(rows[row][c['slug']]['value'], "%Y-%m-%d")[0:5]), "SHORT_DATE_FORMAT")
+                        rows[row][c['slug']]['raw_value'], "SHORT_DATE_FORMAT")
                 except Exception, e:
                     rows[row][c['slug']]['value'] = ''
             c['values'].append(rows[row][c['slug']]['value'])
