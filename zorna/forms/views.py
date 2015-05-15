@@ -1430,7 +1430,9 @@ def file_view(request, file, size=None):
             path = miniature
     response = HttpResponse(mimetype=guess_type(path)[0])
     f = open(path, "r+b")
-    response["Content-Disposition"] = "attachment; filename=\"%s\"" % smart_str(path.rsplit('/', 1)[1])
+    inline = request.GET.get('inline', None)
+    attachment = 'inline' if inline else 'attachment'
+    response["Content-Disposition"] = "%s; filename=\"%s\"" % (attachment, smart_str(path.rsplit('/', 1)[1]))
     response.write(f.read())
     f.close()
     return response

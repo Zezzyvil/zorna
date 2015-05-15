@@ -622,7 +622,7 @@ def fm_manage_folder(request):
 def get_file(request):
 
     pathfile = request.GET.get('file', None)
-
+    inline = request.GET.get('inline', None)
     if pathfile:
         path = clean_path(pathfile)
         if path != pathfile:
@@ -638,7 +638,8 @@ def get_file(request):
         response = HttpResponse(fp.read(), content_type=content_type)
         response['Content-Length'] = os.path.getsize(path)
         pk, filename = split_file_name(f)
-        response['Content-Disposition'] = "attachment; filename=%s" % filename
+        disposition = 'inline' if inline else 'attachment'
+        response['Content-Disposition'] = "%s; filename=%s" % (disposition, filename)
         return response
     else:
         return HttpResponseForbidden()
